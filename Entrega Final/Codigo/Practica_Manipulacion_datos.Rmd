@@ -7,24 +7,128 @@ output: html_document
 
 ```{r setup, include=FALSE}
 knitr::opts_chunk$set(echo = TRUE)
+knitr::opts_knit$set(root.dir = "../Datos")
 ```
 
-## R Markdown
+## 1- Objetivo
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+El objetivo de esta práctica es limpiar un dataset afin de prepararlo para posibles análisis y modelos.
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-```{r cars}
-summary(cars)
+```{r }
+getwd()
 ```
 
-## Including Plots
+## 2- Lectura del dataset en R
 
-You can also embed plots, for example:
+```{r carga del dataset}
+getwd()
+cleanData <- read.table("DataToClean.csv", row.names=NULL, sep="," , header = TRUE, fill=TRUE, check.names = FALSE, encoding= "UTF-8")
 
-```{r pressure, echo=FALSE}
-plot(pressure)
 ```
 
-Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
+Carga de librerias
+
+```{r}
+if(!is.element("DataCombine", installed.packages())){
+  install.packages("DataCombine")}
+      knitr::opts_chunk$set(echo = TRUE)
+      library(DataCombine)
+  if(!is.element("dataMart", installed.packages())){
+  install.packages("datamart")}
+      knitr::opts_chunk$set(echo = TRUE)
+      library(datamart)    
+      
+      
+```
+
+
+
+## 3- Análisis Descriptivo de las variables
+
+```{r, análisis descriptivo del dataset}
+summary(cleanData)
+str(cleanData)
+cleanData
+```
+
+
+## 4- Acciones de limpieza
+
+# 4.1- Primero quitamos los parentesis y el texto entre paréntesis de los nombres de las variables:
+  
+```{r}
+cleanDataPar <- gsub(pattern= " *\\(.*?\\) *", replacement= "", names(cleanData))
+names(cleanData) <- cleanDataPar
+
+```
+
+# 4.2- Quitamos el espacio de las variables "Street 2" y "Strange HTML"
+ 
+```{r}
+cleanDataEsp <- gsub(pattern= " " , replacement="", names(cleanData))
+names(cleanData) <- cleanDataEsp
+cleanData
+```
+
+# 4.3- Rellenamos las filas vacías de la columna Área.
+En la columna "Área" hay filas con valores vacíos. Se rellenan las filas con el valor anterior. Para ello, antes de utilizar la función "FillDown", rellenamos los vacíos con NA:
+
+```{r}
+cleanData$Area <- (ifelse(cleanData$Area == "", NA, as.character(cleanData$Area)))
+cleanData
+
+```
+
+Ejecutamos la función "FillDown" que rellena los valores perdidos NAs con el anterior valor no missing.
+
+```{r}
+cleanDataFD <- FillDown(cleanData, 'Area')
+cleanData <- cleanDataFD
+cleanData
+rm(cleanDataFD)
+
+```
+
+## 4.4 - Sustituimos los caracteres extraños de la columna "Street" por espacios.
+
+```{r}
+cDataStreet <- gsub(pattern= "å", replacement= " ", cleanData$Street)
+cleanData$Street <- cDataStreet
+
+```
+
+Convertimos las Mayúsculas en minúsculas:
+
+```{r}
+
+StreetM <- gsub("(^|[[:space:]])([[:alpha:]])", "\\1\\U\\2", cleanData$Street, perl=TRUE)
+cleanData$Street <- StreetM
+Street2 <- gsub("(^|[[:space:]])([[:alpha:]])", "\\1\\U\\2", cleanData$Street2, perl=TRUE)
+cleanData$Street2 <- Street2
+
+
+```
+
+
+## La columna StrangeHTML, tiene algunos HTML escaped caracteres, procedemos a unescaped.
+Para ello, previamente hemos cargado la libreria "datamart"
+
+```{r}
+
+HtmlUne <- strdehtml(as.character(cleanData$StrangeHTML))
+
+cleanData$StrangeHTML <- HtmlUne
+
+
+```
+
+
+
+## 5- Exportación desde R a un fichero local, el dataset limpio
+
+
+
+## 6- Conclusiones
+
+
+
