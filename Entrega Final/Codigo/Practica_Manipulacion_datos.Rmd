@@ -1,8 +1,10 @@
 ---
-title: "Práctica Preparación y Manipulación Datos en R"
+title: "Práctica Preparación y Manipulación de Datos en R"
 author: "Esther Puerto Sanz"
-date: "14 December 2018"
-output: html_document
+date: "20 December 2018"
+output:
+  pdf_document: default
+  html_document: default
 ---
 
 ```{r setup, include=FALSE}
@@ -14,121 +16,161 @@ knitr::opts_knit$set(root.dir = "../Datos")
 
 El objetivo de esta práctica es limpiar un dataset afin de prepararlo para posibles análisis y modelos.
 
-```{r }
-getwd()
-```
-
 ## 2- Lectura del dataset en R
 
 ```{r carga del dataset}
-getwd()
-cleanData <- read.table("DataToClean.csv", row.names=NULL, sep="," , header = TRUE, fill=TRUE, check.names = FALSE, encoding= "UTF-8")
-
+cleanData <- read.table("DataToClean.csv", row.names=NULL, sep="," , header = TRUE, fill=TRUE, 
+                        check.names = FALSE, encoding= "UTF-8", na.strings = "")
 ```
 
-Carga de librerias
+Se procede a la instalación de los paquetes DataCombine para la aplicación de la función "FillDown()", DataMart para aplicar la función "strdehtml()" y finalmente stringr para aplicar "str_trim()" para la eliminación de espacios.
 
-```{r}
+```{r message=FALSE, warning=FALSE}
 if(!is.element("DataCombine", installed.packages())){
-  install.packages("DataCombine")}
-      knitr::opts_chunk$set(echo = TRUE)
-      library(DataCombine)
-  if(!is.element("dataMart", installed.packages())){
-  install.packages("datamart")}
-      knitr::opts_chunk$set(echo = TRUE)
-      library(datamart)    
-      
-      
+  install.packages("DataCombine")
+}
+
+if(!is.element("datamart", installed.packages())){
+  install.packages("datamart")
+}
+
+if(!is.element("stringr", installed.packages())){
+  install.packages("stringr")
+}
+
 ```
 
+Se procede a la carga de librerías:
 
-
-## 3- Análisis Descriptivo de las variables
-
-```{r, análisis descriptivo del dataset}
-summary(cleanData)
-str(cleanData)
-cleanData
+```{r, carga de librerías}
+library(DataCombine)
+library(datamart)
+library(stringr)
 ```
 
+## 3- Acciones de limpieza
 
-## 4- Acciones de limpieza
+###     3.1- Limpieza de nombre de variables
 
-# 4.1- Primero quitamos los parentesis y el texto entre paréntesis de los nombres de las variables:
+Primero quitamos los paréntesis y el texto entre paréntesis de los nombres de las variables:
   
 ```{r}
 cleanDataPar <- gsub(pattern= " *\\(.*?\\) *", replacement= "", names(cleanData))
 names(cleanData) <- cleanDataPar
-
+rm(cleanDataPar)
 ```
 
-# 4.2- Quitamos el espacio de las variables "Street 2" y "Strange HTML"
+Después procedemos a quitar el espacio de las variables "Street 2" y "Strange HTML"
  
 ```{r}
 cleanDataEsp <- gsub(pattern= " " , replacement="", names(cleanData))
 names(cleanData) <- cleanDataEsp
-cleanData
+rm(cleanDataEsp)
 ```
 
-# 4.3- Rellenamos las filas vacías de la columna Área.
-En la columna "Área" hay filas con valores vacíos. Se rellenan las filas con el valor anterior. Para ello, antes de utilizar la función "FillDown", rellenamos los vacíos con NA:
+###     3.2- Limpieza de la variable Área.
 
-```{r}
-cleanData$Area <- (ifelse(cleanData$Area == "", NA, as.character(cleanData$Area)))
-cleanData
-
-```
-
-Ejecutamos la función "FillDown" que rellena los valores perdidos NAs con el anterior valor no missing.
+Ejecutamos la función "FillDown" que rellena los valores perdidos NAs con el anterior valor no missing. 
+Previamente hemos instalado el paquete "DataCombine" para poder aplicar la función de FillDown.
 
 ```{r}
 cleanDataFD <- FillDown(cleanData, 'Area')
 cleanData <- cleanDataFD
-cleanData
 rm(cleanDataFD)
-
 ```
 
-## 4.4 - Sustituimos los caracteres extraños de la columna "Street" por espacios.
+###     3.3 - Limieza de las variables Street y Street2
+
+Quitamos los espacios situados antes y después del texto de las columnas Street y Street2 a través de la función str_trim().
+
+```{r,}
+StreetEsp <- str_trim(cleanData$Street)
+cleanData$Street <- StreetEsp
+Street2Esp <- str_trim(cleanData$Street2)
+cleanData$Street2 <- Street2Esp
+rm(StreetEsp)
+rm(Street2Esp)
+```
+
+Sustituimos los caracteres extraños de la columna "Street" por espacios.
 
 ```{r}
 cDataStreet <- gsub(pattern= "å", replacement= " ", cleanData$Street)
 cleanData$Street <- cDataStreet
-
+rm(cDataStreet)
 ```
 
-Convertimos las Mayúsculas en minúsculas:
+Nos aseguramos de que hay un espacio entre la coma y la siguiente palabra.
+```{r}
+StreetCo <- gsub(",([[:alpha:]])", ", \\1", cleanData$Street)
+cleanData$Street <- StreetCo
+Street2Co <- gsub(",([[:alpha:]])", ", \\1", cleanData$Street2)
+cleanData$Street2 <- Street2Co
+rm(StreetCo)
+rm(Street2Co)
+```
+
+Hay varias calles con el nombre en Mayúsculas, para uniformarlo, vamos a pasarlo a minúsculas tanto en la variale "Street" como en "Street2"
 
 ```{r}
 
+StreetMay <- tolower(cleanData$Street)
+cleanData$Street <- StreetMay
+
+StreetMay2 <- tolower(cleanData$Street2)
+cleanData$Street2 <- StreetMay2
+rm(StreetMay)
+rm(StreetMay2)
+```
+
+Convertimos la primera letra de las columnas "Street" y "Street2" a Mayúsculas:
+
+```{r}
 StreetM <- gsub("(^|[[:space:]])([[:alpha:]])", "\\1\\U\\2", cleanData$Street, perl=TRUE)
 cleanData$Street <- StreetM
 Street2 <- gsub("(^|[[:space:]])([[:alpha:]])", "\\1\\U\\2", cleanData$Street2, perl=TRUE)
 cleanData$Street2 <- Street2
-
-
+rm(StreetM)
 ```
 
 
-## La columna StrangeHTML, tiene algunos HTML escaped caracteres, procedemos a unescaped.
-Para ello, previamente hemos cargado la libreria "datamart"
+El nombre de Wolverhmapton, contiene caracteres extraños, los vamos a eliminar y además uniformamos el nombre:
 
 ```{r}
+StreetWo <- gsub(pattern= "\u0089|\u0090", replacement= "", cleanData$Street)
+StreetWo <- gsub(pattern= "WÛton|Wûton|W'ton|Wolves|Wton|Woolverhampton", 
+                 replacement= "Wolverhampton", StreetWo)
+cleanData$Street <- StreetWo
+rm(StreetWo)
+Street2Wo <- gsub(pattern= "\u0089|\u0090", replacement= "", cleanData$Street2)
+Street2Wo <- gsub(pattern= "WÛton|Wûton|W'ton|Wolves|Wton|Woolverhampton",
+                  replacement= "Wolverhampton", Street2Wo)
+cleanData$Street2 <- Street2Wo
+rm(Street2Wo)
+```
 
+###     3.4 - Limpieza de la variable StrangeHTML
+
+La columna StrangeHTML, tiene algunos HTML escaped caracteres, procedemos a unescaped.
+Para ello, previamente hemos cargado la libreria "dataMart"
+
+```{r}
 HtmlUne <- strdehtml(as.character(cleanData$StrangeHTML))
-
 cleanData$StrangeHTML <- HtmlUne
-
-
+rm(HtmlUne)
 ```
 
 
+## 5- Exportación del dataset limpio
 
-## 5- Exportación desde R a un fichero local, el dataset limpio
+Finalmente vamos a exportar el dataset que hemos limpiado desde R a un fichero local con un formato csv.
+```{r}
+write.table(cleanData, file="cleanData.csv", sep=";", row.names=FALSE)
 
-
+```
 
 ## 6- Conclusiones
 
+Con la limpieza del DataSet ya podemos empezar a trabajar en el análisis de datos.
 
 
